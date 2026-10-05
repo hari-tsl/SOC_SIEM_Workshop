@@ -1,0 +1,12 @@
+filebeat.inputs:
+  - type: filestream
+    id: kali-scenarios
+    paths: [/logs/scenarios.json]
+    parsers:
+      - ndjson:
+          target: ""
+          add_error_key: true
+    fields_under_root: true
+    fields: {event: {dataset: kali.scenario}, host: {name: kali}}
+output.logstash:
+  hosts: ["logstash:5044"]

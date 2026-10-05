@@ -1,0 +1,12 @@
+winlogbeat.event_logs:
+  - name: Security
+  - name: System
+  - name: Application
+  - name: Microsoft-Windows-PowerShell/Operational
+  - name: OpenSSH/Operational
+output.logstash:
+  hosts: ["172.30.51.10:5044"]
+logging.to_files: true
+logging.files:
+  path: 'C:\Program Files\Winlogbeat-Data\logs'
+  keepfiles: 3

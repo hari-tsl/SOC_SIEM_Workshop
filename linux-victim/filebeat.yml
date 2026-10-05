@@ -1,0 +1,23 @@
+filebeat.inputs:
+  - type: filestream
+    id: linux-auth
+    paths: [/var/log/victim/auth.log]
+    fields_under_root: true
+    fields: {event: {dataset: linux.auth}, host: {name: linux-victim}}
+  - type: filestream
+    id: linux-system
+    paths: [/var/log/victim/syslog]
+    fields_under_root: true
+    fields: {event: {dataset: linux.system}, host: {name: linux-victim}}
+  - type: filestream
+    id: linux-web
+    paths: [/var/log/victim/nginx/access.json]
+    fields_under_root: true
+    fields: {event: {dataset: linux.web}, host: {name: linux-victim}}
+  - type: filestream
+    id: linux-ftp
+    paths: [/var/log/victim/vsftpd.log]
+    fields_under_root: true
+    fields: {event: {dataset: linux.ftp}, host: {name: linux-victim}}
+output.logstash:
+  hosts: ["logstash:5044"]
