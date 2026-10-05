@@ -1,0 +1,5 @@
+http.host: 0.0.0.0
+xpack.monitoring.enabled: false
+pipeline.ecs_compatibility: v8
+queue.type: persisted
+queue.max_bytes: 512mb

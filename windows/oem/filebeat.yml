@@ -1,0 +1,13 @@
+filebeat.inputs:
+  - type: filestream
+    id: windows-ftp
+    paths: ['C:\inetpub\logs\LogFiles\FTPSVC*\*.log']
+    exclude_lines: ['^#']
+    fields_under_root: true
+    fields: {event: {dataset: windows.ftp}}
+output.logstash:
+  hosts: ["172.30.51.10:5044"]
+logging.to_files: true
+logging.files:
+  path: 'C:\Program Files\Filebeat-Data\logs'
+  keepfiles: 3
