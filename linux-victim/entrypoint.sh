@@ -1,34 +1,24 @@
 #!/bin/bash
-set -euo pipefail
-: "${LAB_PASSWORD:?LAB_PASSWORD required}"
-echo "student:$LAB_PASSWORD" | chpasswd
-ssh-keygen -A
+set -uo pipefail
 
-mkdir -p /run/sshd /run/php /var/log/nginx /var/log/supervisor /var/run/mysqld
-chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
-chown -R www-data:www-data /var/www/html /run/php
-touch /var/log/auth.log /var/log/syslog /var/log/vsftpd.log
-chown syslog:adm /var/log/auth.log /var/log/syslog /var/log/vsftpd.log || true
+: "${LAB_PASSWORD:=SocLabPass123!}"
+echo "student:$LAB_PASSWORD" | chpasswd || true
+ssh-keygen -A 2>/dev/null || true
 
-# Initialize MariaDB data directory if not already populated
-if [ ! -d "/var/lib/mysql/mysql" ]; then
-    mysql_install_db --user=mysql --ldata=/var/lib/mysql >/dev/null 2>&1
-fi
+mkdir -p /run/sshd /run/php /var/log/nginx /var/log/supervisor /var/run/mysqld /var/run/vsftpd/empty
+chown -R mysql:mysql /var/run/mysqld /var/lib/mysql 2>/dev/null || true
+chown -R www-data:www-data /var/www/html /run/php 2>/dev/null || true
+touch /var/log/auth.log /var/log/syslog /var/log/vsftpd.log 2>/dev/null || true
+chmod 666 /var/log/auth.log /var/log/syslog /var/log/vsftpd.log 2>/dev/null || true
 
-# Temporarily spin up MariaDB to seed DVWA database and tables
-/usr/bin/mysqld_safe --skip-syslog >/dev/null 2>&1 &
-MYSQL_PID=$!
-
-for _ in {1..30}; do
-    if mysqladmin ping --silent 2>/dev/null; then break; fi
-    sleep 1
-done
-
-# Initialize DVWA database and grant user privileges
-mariadb -e "CREATE DATABASE IF NOT EXISTS dvwa; GRANT ALL ON dvwa.* TO 'dvwa'@'localhost' IDENTIFIED BY 'dvwa'; FLUSH PRIVILEGES;"
-
-# Seed default DVWA tables and accounts
-mariadb dvwa << 'EOSQL'
+# Initialize database in background once supervisord starts MariaDB
+(
+    for _ in {1..30}; do
+        if mariadb -e "SELECT 1" >/dev/null 2>&1; then break; fi
+        sleep 2
+    done
+    mariadb -e "CREATE DATABASE IF NOT EXISTS dvwa; GRANT ALL ON dvwa.* TO 'dvwa'@'localhost' IDENTIFIED BY 'dvwa'; FLUSH PRIVILEGES;" 2>/dev/null || true
+    mariadb dvwa << 'EOSQL' 2>/dev/null || true
 CREATE TABLE IF NOT EXISTS users (
   user_id int(6) NOT NULL AUTO_INCREMENT,
   first_name varchar(15) DEFAULT NULL,
@@ -59,10 +49,6 @@ INSERT INTO guestbook (comment_id, comment, name)
 VALUES (1,'This is a test comment.','test')
 ON DUPLICATE KEY UPDATE name=VALUES(name);
 EOSQL
-
-# Stop temporary database process so supervisord can manage it
-mysqladmin shutdown >/dev/null 2>&1 || kill $MYSQL_PID 2>/dev/null || true
-wait $MYSQL_PID 2>/dev/null || true
-sleep 1
+) &
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/lab.conf
