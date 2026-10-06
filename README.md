@@ -13,15 +13,13 @@ Prerequisites: Ubuntu (22.04 / 24.04) or comparable Linux, Docker Engine with Co
 sudo ./start.sh
 ```
 
-The script generates lab passwords, prepares Windows OEM settings, checks KVM, applies Elasticsearch's `vm.max_map_count` if needed, builds the images, starts ELK, imports dashboard objects, provisions Windows, runs scenarios, and checks fresh telemetry. It exits nonzero on failure. Docker installation is a prerequisite, not an unannounced host installation step.
+The startup script automatically verifies or installs native Elasticsearch, Logstash, and Kibana on the Ubuntu host, prepares credentials, builds the 3 target containers (Linux DVWA, Windows target, Kali attacker), and connects them to the host SIEM. All services start in seconds.
 
-First Windows installation can take 30-120 minutes depending on the host and network. `WINDOWS_TIMEOUT` defaults to 7200 seconds. Persistent Windows storage avoids reinstalling on subsequent starts. If a download fails, Windows bootstrap retries every five minutes; see its transcript.
-
-| Interface | URL on the Linux host |
-| --- | --- |
-| SOC dashboard | http://127.0.0.1:5601/app/dashboards#/view/soc-overview |
-| Vulnerable web catalog | http://127.0.0.1:8080 |
-| Windows installation console | http://127.0.0.1:8006 |
+| Interface | URL on the Linux host | Description |
+| --- | --- | --- |
+| SOC Kibana Dashboard | http://127.0.0.1:5601/app/dashboards#/view/soc-overview | Pre-configured investigation views and data view `soc-*` |
+| DVWA Web Target | http://127.0.0.1:8080 | Damn Vulnerable Web Application (PHP + MariaDB) |
+| Windows Target Console | http://127.0.0.1:8006 | Real-time status of SMB, OpenSSH, IIS FTP, and Security telemetry |
 
 On your Mac, tunnel to the Linux host:
 
