@@ -4,18 +4,23 @@ set -euo pipefail
 for cmd in docker python3 sysctl; do command -v "$cmd" >/dev/null || { echo "Missing prerequisite: $cmd"; exit 1; }; done
 docker info >/dev/null
 docker compose version >/dev/null
-[[ -c /dev/kvm && -c /dev/net/tun ]] || { echo 'KVM and /dev/net/tun required; Docker Desktop on macOS cannot run this lab.'; exit 1; }
-python3 - <<'PYCHECK'
-import fcntl, os
-fd=os.open('/dev/kvm',os.O_RDWR)
-assert fcntl.ioctl(fd,0xAE00,0)==12, 'KVM API unavailable'
-os.close(fd)
-PYCHECK
+
+# Optional KVM notification (native container does not require KVM)
+if [[ -c /dev/kvm ]]; then
+  echo "[OK] Hardware KVM detected."
+else
+  echo "[INFO] Running in native container mode (KVM not required)."
+fi
+
 ram=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
-((ram >= 15000000)) || { echo 'At least 16 GB host RAM required.'; exit 1; }
+if ((ram < 7500000)); then
+  echo 'WARNING: Host has under 8 GB RAM; Elasticsearch and services may encounter pressure.'
+fi
+
 data_root=$(docker info --format '{{.DockerRootDir}}')
 free=$(df -Pk "$data_root" | awk 'NR==2 {print $4}')
-((free >= 100000000)) || echo 'WARNING: under 100 GB free in Docker storage; Windows and logs may exhaust disk.'
+((free >= 20000000)) || echo 'WARNING: under 20 GB free in Docker storage; logs may exhaust disk.'
+
 if (( $(sysctl -n vm.max_map_count) < 262144 )); then
   [[ $EUID == 0 ]] || { echo 'Run sudo ./start.sh to apply vm.max_map_count.'; exit 1; }
   sysctl -w vm.max_map_count=262144

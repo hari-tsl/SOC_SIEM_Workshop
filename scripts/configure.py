@@ -27,7 +27,8 @@ def main():
     for key in ('WINDOWS_PASSWORD','LAB_PASSWORD'):
         if cfg.get(key) == 'CHANGE_ME' or len(cfg.get(key,'')) < 12: raise ValueError('Set a strong lab-only '+key)
     runtime=ROOT/'.runtime/oem'; runtime.mkdir(parents=True,exist_ok=True)
-    for src in (ROOT/'windows/oem').iterdir(): shutil.copy2(src,runtime/src.name)
+    if (ROOT/'windows/oem').exists():
+        for src in (ROOT/'windows/oem').iterdir(): shutil.copy2(src,runtime/src.name)
     (runtime/'settings.json').write_text(json.dumps({'elastic_version':cfg.get('ELASTIC_VERSION','8.19.4'),'lab_password':cfg['LAB_PASSWORD']}))
     path.chmod(0o600)
     print('Configuration prepared. Lab credentials: .env (do not commit).')

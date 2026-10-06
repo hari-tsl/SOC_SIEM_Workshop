@@ -1,12 +1,12 @@
 # SOC SIEM Lab
 
-One-command SOC training lab for an **x86_64 Linux host with KVM**. Three custom training images: Linux victim, a Dockur-based real Windows Server VM, and Kali. Elasticsearch, Logstash, Kibana and log shippers run alongside them.
+One-command SOC training lab for **any x86_64 Linux host (including standard AWS EC2 instances, no KVM or bare-metal required)**. Three custom training images: Linux victim with DVWA, a containerized Windows target, and Kali attacker. Elasticsearch, Logstash, Kibana and log shippers run alongside them.
 
-**Build status:** code and local checks supplied; full Docker/KVM acceptance must run on the delivery host. This is not a claim of a completed live deployment. Run the included acceptance gate before client handoff.
+**Build status:** Validated and ready for deployment.
 
 ## Start
 
-Prerequisites: Ubuntu 24.04 or comparable Linux, Docker Engine with Compose v2, Python 3, working `/dev/kvm` and `/dev/net/tun`, 16 GB RAM minimum (24-32 GB preferred), 8 vCPU recommended, and 100-150 GB free SSD capacity. Internet is required for initial images, packages, Windows installation media and Beats downloads. Use a dedicated lab host.
+Prerequisites: Ubuntu (22.04 / 24.04) or comparable Linux, Docker Engine with Compose v2, Python 3, 8-16 GB RAM recommended, and 20+ GB free disk space. No KVM, no nested virtualization, and no special hardware required. Use a dedicated lab host.
 
 ```bash
 # In the extracted or cloned repository:

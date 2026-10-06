@@ -81,31 +81,16 @@ services:
     restart: unless-stopped
     logging: *logging
   windows:
-    build:
-      context: ./windows
-      args: {DOCKUR_IMAGE: "${DOCKUR_IMAGE:-dockurr/windows:latest}"}
+    build: ./windows
     image: soc-lab/windows:1.0.0
+    hostname: SOC-WINDOWS
     environment:
-      VERSION: "2022"
-      LANGUAGE: English
-      HOST: SOC-WINDOWS
-      USERNAME: "${WINDOWS_USER:-labadmin}"
-      PASSWORD: "${WINDOWS_PASSWORD:?Run start.sh first}"
-      RAM_SIZE: "${WINDOWS_RAM:-4G}"
-      CPU_CORES: "${WINDOWS_CPUS:-2}"
-      DISK_SIZE: "${WINDOWS_DISK:-64G}"
-      NETWORK: nat
-      SAMBA: "N"
-      LOG: "Y"
-    devices: [/dev/kvm:/dev/kvm, /dev/net/tun:/dev/net/tun]
-    cap_add: [NET_ADMIN]
+      LAB_PASSWORD: "${LAB_PASSWORD:?Run start.sh first}"
     volumes:
       - windows-data:/storage
-      - ./.runtime/oem:/oem:ro
     networks:
       windows-net: {ipv4_address: 172.30.51.30}
     ports: [127.0.0.1:8006:8006]
-    stop_grace_period: 2m
     restart: unless-stopped
     logging: *logging
   windows-target:

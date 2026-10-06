@@ -11,7 +11,7 @@ printf 'Starting ELK and building training images...\n'
 dc up -d --build elasticsearch logstash kibana
 dc run --rm setup bootstrap
 dc up -d --build linux-victim filebeat kali kali-filebeat windows-target
-printf 'Starting Windows installation (first run may take 30-120 minutes)...\n'
+printf 'Starting Windows target services...\n'
 dc up -d --build windows
 limit=$(python3 -c 'from scripts.configure import read_env; from pathlib import Path; print(int(read_env(Path(".env")).get("WINDOWS_TIMEOUT",7200)))')
 deadline=$((SECONDS+limit))

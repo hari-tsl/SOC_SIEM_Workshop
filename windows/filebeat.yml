@@ -1,0 +1,18 @@
+filebeat.inputs:
+  - type: filestream
+    id: windows-events
+    paths: [/var/log/winlogbeat/windows-events.json]
+    parsers:
+      - ndjson:
+          target: ""
+          add_error_key: true
+    fields_under_root: true
+
+  - type: filestream
+    id: windows-ftp
+    paths: [/var/log/windows-ftp/ftpsvc.log]
+    fields_under_root: true
+    fields: {event: {dataset: windows.ftp}}
+
+output.logstash:
+  hosts: ["172.30.51.10:5044"]
