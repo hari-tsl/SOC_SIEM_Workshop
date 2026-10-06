@@ -21,16 +21,27 @@ sudo apt-get update
 sudo apt-get install -y elasticsearch kibana logstash
 
 # 4. Configure Elasticsearch (Single node, no security for isolated lab)
-sudo mkdir -p /etc/elasticsearch/jvm.options.d
+sudo mkdir -p /etc/elasticsearch/jvm.options.d /var/lib/elasticsearch /var/log/elasticsearch
 sudo tee /etc/elasticsearch/elasticsearch.yml > /dev/null << 'EOF'
 cluster.name: soc-siem-lab
 node.name: ubuntu-soc-host
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
 network.host: 0.0.0.0
 http.port: 9200
 discovery.type: single-node
 xpack.security.enabled: false
 xpack.security.enrollment.enabled: false
+xpack.security.http.ssl.enabled: false
+xpack.security.transport.ssl.enabled: false
+ingest.geoip.downloader.enabled: false
 EOF
+
+# Reset keystore to remove conflicting SSL passwords created by apt install
+sudo /usr/share/elasticsearch/bin/elasticsearch-keystore create -f
+sudo chown root:elasticsearch /etc/elasticsearch/elasticsearch.keystore
+sudo chmod 660 /etc/elasticsearch/elasticsearch.keystore
+sudo chown -R elasticsearch:elasticsearch /var/lib/elasticsearch /var/log/elasticsearch /etc/elasticsearch
 
 # Set JVM Heap for Elasticsearch (1 GB for cloud lab)
 sudo tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null << 'EOF'
