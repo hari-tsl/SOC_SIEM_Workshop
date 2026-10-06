@@ -27,6 +27,12 @@ if ! curl -fsS http://localhost:5601/api/status >/dev/null 2>&1; then
 fi
 echo "[OK] Host Kibana is active (http://localhost:5601)."
 
+# Ensure Logstash pipeline config is up to date
+if [ -d /etc/logstash/conf.d ]; then
+    sudo cp "$SCRIPT_DIR/elk/logstash/pipeline.conf" /etc/logstash/conf.d/main.conf
+    sudo systemctl restart logstash || true
+fi
+
 # 2. Configure credentials
 python3 "$SCRIPT_DIR/scripts/configure.py"
 

@@ -1,12 +1,18 @@
 <?php
 # DVWA Configuration for SOC SIEM Lab
 
+$DBMS = 'MySQL';
+
 $_DVWA = array();
 $_DVWA[ 'db_server' ]   = '127.0.0.1';
 $_DVWA[ 'db_database' ] = 'dvwa';
 $_DVWA[ 'db_user' ]     = 'dvwa';
 $_DVWA[ 'db_password' ] = 'dvwa';
 $_DVWA[ 'db_port' ]     = '3306';
+
+# Database management system to use: 'MySQL' or 'sqlite'
+$_DVWA[ 'DBMS' ]        = 'MySQL';
+$_DVWA[ 'db_type' ]     = 'mysql';
 
 # Default security level for training: low
 $_DVWA[ 'default_security_level' ] = 'low';

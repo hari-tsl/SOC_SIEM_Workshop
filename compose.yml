@@ -17,7 +17,7 @@ services:
     ports: ["0.0.0.0:8080:80"]
     extra_hosts: ["host.docker.internal:host-gateway"]
     healthcheck:
-      test: [CMD-SHELL, "curl -fsS http://localhost/health && pgrep -x sshd && pgrep -x vsftpd"]
+      test: [CMD-SHELL, "curl -fsS http://localhost:8081/health && pgrep -x sshd && pgrep -x vsftpd"]
       interval: 10s
       timeout: 5s
       retries: 30

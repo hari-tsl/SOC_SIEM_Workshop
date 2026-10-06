@@ -60,8 +60,10 @@ server.port: 5601
 server.host: "0.0.0.0"
 elasticsearch.hosts: ["http://localhost:9200"]
 telemetry.enabled: false
-newsfeed.enabled: false
 EOF
+if ! grep -q "elasticsearch" /etc/hosts; then
+    echo "127.0.0.1 elasticsearch" | sudo tee -a /etc/hosts
+fi
 
 # 6. Configure Logstash Pipeline
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

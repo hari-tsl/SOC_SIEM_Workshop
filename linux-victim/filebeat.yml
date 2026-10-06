@@ -14,6 +14,11 @@ filebeat.inputs:
     paths: [/var/log/victim/nginx/access.json]
     fields_under_root: true
     fields: {event: {dataset: linux.web}, host: {name: linux-victim}}
+    processors:
+      - drop_event:
+          when:
+            contains:
+              message: '"uri":"/health'
   - type: filestream
     id: linux-ftp
     paths: [/var/log/victim/vsftpd.log]
