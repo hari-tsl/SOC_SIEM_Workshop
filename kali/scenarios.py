@@ -85,12 +85,19 @@ def web():
         '/search?q=' + urllib.parse.quote("' OR 1=1 -- ")
     ]
     for path in targets:
-        try:
-            with urllib.request.urlopen('http://linux-victim' + path, timeout=10) as r:
-                r.read()
-        except urllib.error.HTTPError as e:
-            if e.code != 404:
-                raise
+        for attempt in range(10):
+            try:
+                with urllib.request.urlopen('http://linux-victim' + path, timeout=10) as r:
+                    r.read()
+                break
+            except urllib.error.HTTPError as e:
+                if e.code != 404:
+                    raise
+                break
+            except (urllib.error.URLError, ConnectionRefusedError, OSError):
+                if attempt == 9:
+                    raise
+                time.sleep(1)
 
 def dvwa_bruteforce():
     url = 'http://linux-victim/dvwa/login.php'
@@ -102,11 +109,17 @@ def dvwa_bruteforce():
             'Login': 'Login'
         }).encode('utf-8')
         req = urllib.request.Request(url, data=data, method='POST')
-        try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                resp.read()
-        except urllib.error.HTTPError:
-            pass
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    resp.read()
+                break
+            except urllib.error.HTTPError:
+                break
+            except (urllib.error.URLError, ConnectionRefusedError, OSError):
+                if attempt == 4:
+                    pass
+                time.sleep(1)
         time.sleep(0.5)
 
 def dvwa_sqli():

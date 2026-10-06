@@ -43,10 +43,13 @@ python3 "$SCRIPT_DIR/scripts/bootstrap.py" bootstrap http://localhost:9200 http:
 echo "Starting the 3 Docker target containers (Linux DVWA, Windows target, Kali attacker)..."
 dc up -d --build
 
-# 5. Wait for Windows readiness
+# 5. Wait for target services readiness
 echo "Waiting for target services to report ready..."
 until dc exec -T kali curl -fsS --max-time 8 http://windows-target:18080/ >/dev/null 2>&1; do
-    sleep 3
+    sleep 2
+done
+until dc exec -T kali curl -fsSL --max-time 8 http://linux-victim/dvwa/login.php >/dev/null 2>&1; do
+    sleep 2
 done
 echo "[OK] All target services ready."
 
