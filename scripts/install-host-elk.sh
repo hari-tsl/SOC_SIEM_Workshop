@@ -38,7 +38,8 @@ ingest.geoip.downloader.enabled: false
 EOF
 
 # Reset keystore to remove conflicting SSL passwords created by apt install
-sudo /usr/share/elasticsearch/bin/elasticsearch-keystore create -f
+sudo rm -f /etc/elasticsearch/elasticsearch.keystore
+sudo /usr/share/elasticsearch/bin/elasticsearch-keystore create
 sudo chown root:elasticsearch /etc/elasticsearch/elasticsearch.keystore
 sudo chmod 660 /etc/elasticsearch/elasticsearch.keystore
 sudo chown -R elasticsearch:elasticsearch /var/lib/elasticsearch /var/log/elasticsearch /etc/elasticsearch
