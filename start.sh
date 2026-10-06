@@ -45,12 +45,25 @@ dc up -d --build
 
 # 5. Wait for target services readiness
 echo "Waiting for target services to report ready..."
-until dc exec -T kali curl -fsS --max-time 8 http://windows-target:18080/ >/dev/null 2>&1; do
+until dc exec -T kali curl -fsS --max-time 5 http://windows-target:18080/ >/dev/null 2>&1; do
     sleep 2
 done
-until dc exec -T kali curl -fsSL --max-time 8 http://linux-victim/dvwa/login.php >/dev/null 2>&1; do
+echo "[OK] Windows target ready."
+
+echo "Waiting for Linux DVWA target..."
+ready=0
+for _ in {1..30}; do
+    if dc exec -T kali curl -fsSL --max-time 5 http://linux-victim/dvwa/login.php >/dev/null 2>&1; then
+        ready=1
+        break
+    fi
     sleep 2
 done
+if [ "$ready" -eq 1 ]; then
+    echo "[OK] Linux DVWA target ready."
+else
+    echo "[WARN] DVWA took longer than expected; proceeding with acceptance checks..."
+fi
 echo "[OK] All target services ready."
 
 # 6. Run initial acceptance scenarios

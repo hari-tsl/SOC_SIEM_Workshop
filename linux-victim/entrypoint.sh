@@ -5,8 +5,12 @@ set -uo pipefail
 echo "student:$LAB_PASSWORD" | chpasswd || true
 ssh-keygen -A 2>/dev/null || true
 
-mkdir -p /run/sshd /run/php /var/log/nginx /var/log/supervisor /var/run/mysqld /var/run/vsftpd/empty
-chown -R mysql:mysql /var/run/mysqld /var/lib/mysql 2>/dev/null || true
+mkdir -p /run/sshd /run/php /var/log/nginx /var/log/supervisor /run/mysqld /var/run/mysqld /var/run/vsftpd/empty
+chmod 777 /run/mysqld /var/run/mysqld 2>/dev/null || true
+if [ ! -d /var/lib/mysql/mysql ]; then
+    mariadb-install-db --user=mysql --datadir=/var/lib/mysql >/dev/null 2>&1 || true
+fi
+chown -R mysql:mysql /run/mysqld /var/run/mysqld /var/lib/mysql 2>/dev/null || true
 chown -R www-data:www-data /var/www/html /run/php 2>/dev/null || true
 touch /var/log/auth.log /var/log/syslog /var/log/vsftpd.log 2>/dev/null || true
 chmod 666 /var/log/auth.log /var/log/syslog /var/log/vsftpd.log 2>/dev/null || true
