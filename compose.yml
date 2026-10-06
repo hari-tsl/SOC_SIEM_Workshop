@@ -2,65 +2,20 @@ name: soc-siem-lab
 x-logging: &logging
   driver: json-file
   options: {max-size: "10m", max-file: "3"}
+
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.19.4}
-    environment:
-      discovery.type: single-node
-      xpack.security.enabled: "false"
-      ES_JAVA_OPTS: -Xms1g -Xmx1g
-    volumes: [es-data:/usr/share/elasticsearch/data]
-    networks: [backend]
-    mem_limit: 2g
-    healthcheck:
-      test: [CMD-SHELL, "curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' >/dev/null"]
-      interval: 10s
-      timeout: 8s
-      retries: 60
-    restart: unless-stopped
-    logging: *logging
-  logstash:
-    image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION:-8.19.4}
-    environment: {LS_JAVA_OPTS: "-Xms512m -Xmx512m"}
-    volumes:
-      - ./elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-      - ./elk/logstash/pipeline.conf:/usr/share/logstash/pipeline/main.conf:ro
-      - logstash-data:/usr/share/logstash/data
-    networks:
-      backend: {}
-      lab: {}
-      windows-net: {ipv4_address: 172.30.51.10}
-    depends_on: {elasticsearch: {condition: service_healthy}}
-    healthcheck:
-      test: [CMD-SHELL, "curl -fsS http://localhost:9600/_node/pipelines/main >/dev/null"]
-      interval: 10s
-      timeout: 5s
-      retries: 60
-    mem_limit: 1024m
-    restart: unless-stopped
-    logging: *logging
-  kibana:
-    image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION:-8.19.4}
-    volumes: [./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro]
-    ports: [127.0.0.1:5601:5601]
-    networks: [backend]
-    depends_on: {elasticsearch: {condition: service_healthy}}
-    healthcheck:
-      test: [CMD-SHELL, "curl -fsS http://localhost:5601/api/status >/dev/null"]
-      interval: 10s
-      timeout: 5s
-      retries: 90
-    mem_limit: 1g
-    restart: unless-stopped
-    logging: *logging
+  # =============================================================
+  # 1. Linux Victim Target (DVWA, SSH, vsftpd)
+  # =============================================================
   linux-victim:
     build: ./linux-victim
     image: soc-lab/linux-victim:1.0.0
     hostname: linux-victim
-    environment: {LAB_PASSWORD: "${LAB_PASSWORD:?Run start.sh first}"}
+    environment: {LAB_PASSWORD: "${LAB_PASSWORD:-SocLabPass123!}"}
     volumes: [linux-logs:/var/log]
     networks: [lab]
-    ports: [127.0.0.1:8080:80]
+    ports: ["0.0.0.0:8080:80"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
     healthcheck:
       test: [CMD-SHELL, "curl -fsS http://localhost/health && pgrep -x sshd && pgrep -x vsftpd"]
       interval: 10s
@@ -68,6 +23,7 @@ services:
       retries: 30
     restart: unless-stopped
     logging: *logging
+
   filebeat:
     image: docker.elastic.co/beats/filebeat:${ELASTIC_VERSION:-8.19.4}
     user: root
@@ -77,40 +33,45 @@ services:
       - linux-logs:/var/log/victim:ro
       - filebeat-data:/usr/share/filebeat/data
     networks: [lab]
-    depends_on: {logstash: {condition: service_healthy}}
+    extra_hosts: ["host.docker.internal:host-gateway"]
     restart: unless-stopped
     logging: *logging
+
+  # =============================================================
+  # 2. Windows Target (SMB LabShare, SSH, IIS FTP, Winlog Telemetry)
+  # =============================================================
   windows:
     build: ./windows
     image: soc-lab/windows:1.0.0
     hostname: SOC-WINDOWS
     environment:
-      LAB_PASSWORD: "${LAB_PASSWORD:?Run start.sh first}"
+      LAB_PASSWORD: "${LAB_PASSWORD:-SocLabPass123!}"
     volumes:
       - windows-data:/storage
     networks:
-      windows-net: {ipv4_address: 172.30.51.30}
-    ports: [127.0.0.1:8006:8006]
+      lab:
+        aliases:
+          - windows-target
+    ports: ["0.0.0.0:8006:8006"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
     restart: unless-stopped
     logging: *logging
-  windows-target:
-    image: haproxy:3.0-alpine
-    volumes: [./windows/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro]
-    networks: [lab, windows-net]
-    restart: unless-stopped
-    logging: *logging
+
+  # =============================================================
+  # 3. Kali Linux Attacker Box
+  # =============================================================
   kali:
     build: ./kali
     image: soc-lab/kali:1.0.0
     hostname: kali
     environment:
-      LAB_PASSWORD: "${LAB_PASSWORD:?Run start.sh first}"
+      LAB_PASSWORD: "${LAB_PASSWORD:-SocLabPass123!}"
     networks: [lab]
     volumes: [kali-logs:/logs]
-    cap_drop: [ALL]
-    security_opt: [no-new-privileges:true]
+    extra_hosts: ["host.docker.internal:host-gateway"]
     restart: unless-stopped
     logging: *logging
+
   kali-filebeat:
     image: docker.elastic.co/beats/filebeat:${ELASTIC_VERSION:-8.19.4}
     user: root
@@ -120,27 +81,15 @@ services:
       - kali-logs:/logs:ro
       - kali-beat-data:/usr/share/filebeat/data
     networks: [lab]
-    depends_on: {logstash: {condition: service_healthy}}
+    extra_hosts: ["host.docker.internal:host-gateway"]
     restart: unless-stopped
     logging: *logging
-  setup:
-    image: python:3.12-slim-bookworm
-    profiles: [tools]
-    entrypoint: [python, /scripts/bootstrap.py]
-    volumes:
-      - ./scripts:/scripts:ro
-      - ./elk/kibana:/kibana:ro
-    networks: [backend]
+
 networks:
-  backend: {internal: true}
-  lab: {internal: true}
-  # Only Windows provisioning has Internet egress. Kali has no route here.
-  windows-net:
-    ipam:
-      config: [{subnet: 172.30.51.0/24}]
+  lab:
+    name: soc-lab-net
+
 volumes:
-  es-data:
-  logstash-data:
   linux-logs:
   filebeat-data:
   windows-data:

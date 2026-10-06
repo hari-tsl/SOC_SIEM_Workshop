@@ -15,4 +15,4 @@ filebeat.inputs:
     fields: {event: {dataset: windows.ftp}}
 
 output.logstash:
-  hosts: ["172.30.51.10:5044"]
+  hosts: ["host.docker.internal:5044", "172.30.51.10:5044", "logstash:5044"]

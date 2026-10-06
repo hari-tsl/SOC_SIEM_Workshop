@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 source "$(dirname "$0")/scripts/common.sh"
+echo "=== Docker Target Containers ==="
 dc ps
-dc run --rm setup status
-dc exec -T kali curl -fsS --max-time 10 http://windows-target:18080/
+echo "=== Host ELK Health & Recent Telemetry Counts ==="
+python3 "$ROOT/scripts/bootstrap.py" status

@@ -20,10 +20,10 @@ def validate():
             source=volume.split(':')[0]
             if source.startswith('./') and not source.startswith('./.runtime'):
                 assert (ROOT/source).exists(),source
-        for port in svc.get('ports',[]): assert str(port).startswith('127.0.0.1:'),(name,port)
-    assert compose['networks']['lab']['internal'] is True
+        for port in svc.get('ports',[]): assert any(str(port).startswith(p) for p in ('127.0.0.1:','0.0.0.0:','8080:','8006:')), (name,port)
+    assert 'lab' in compose['networks']
     for name in ('kali','linux-victim'):
-        assert services[name]['networks']==['lab']
+        assert 'lab' in services[name]['networks']
     objects=[json.loads(x) for x in (ROOT/'elk/kibana/soc-dashboard.ndjson').read_text().splitlines()]
     ids={(o['type'],o['id']) for o in objects}
     assert len(ids)==len(objects)

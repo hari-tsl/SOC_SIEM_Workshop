@@ -20,4 +20,4 @@ filebeat.inputs:
     fields_under_root: true
     fields: {event: {dataset: linux.ftp}, host: {name: linux-victim}}
 output.logstash:
-  hosts: ["logstash:5044"]
+  hosts: ["host.docker.internal:5044", "logstash:5044"]
