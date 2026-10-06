@@ -11,18 +11,32 @@ if [ ! -d /var/lib/mysql/mysql ]; then
     mariadb-install-db --user=mysql --datadir=/var/lib/mysql >/dev/null 2>&1 || true
 fi
 chown -R mysql:mysql /run/mysqld /var/run/mysqld /var/lib/mysql 2>/dev/null || true
-chown -R www-data:www-data /var/www/html /run/php 2>/dev/null || true
-touch /var/log/auth.log /var/log/syslog /var/log/vsftpd.log 2>/dev/null || true
-chmod 666 /var/log/auth.log /var/log/syslog /var/log/vsftpd.log 2>/dev/null || true
+chown -R www-data:www-data /var/www/html /run/php /var/log/nginx 2>/dev/null || true
+touch /var/log/auth.log /var/log/syslog /var/log/vsftpd.log /var/log/nginx/access.json /var/log/nginx/error.log 2>/dev/null || true
+chmod 666 /var/log/auth.log /var/log/syslog /var/log/vsftpd.log /var/log/nginx/access.json /var/log/nginx/error.log 2>/dev/null || true
 
-# Initialize database in background once supervisord starts MariaDB
-(
-    for _ in {1..30}; do
-        if mariadb -e "SELECT 1" >/dev/null 2>&1; then break; fi
-        sleep 2
-    done
-    mariadb -e "CREATE DATABASE IF NOT EXISTS dvwa; CREATE USER IF NOT EXISTS 'dvwa'@'localhost' IDENTIFIED BY 'dvwa'; CREATE USER IF NOT EXISTS 'dvwa'@'127.0.0.1' IDENTIFIED BY 'dvwa'; CREATE USER IF NOT EXISTS 'dvwa'@'%' IDENTIFIED BY 'dvwa'; ALTER USER 'dvwa'@'localhost' IDENTIFIED BY 'dvwa'; ALTER USER 'dvwa'@'127.0.0.1' IDENTIFIED BY 'dvwa'; ALTER USER 'dvwa'@'%' IDENTIFIED BY 'dvwa'; GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'localhost'; GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'127.0.0.1'; GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'%'; FLUSH PRIVILEGES;" 2>/dev/null || true
-    mariadb dvwa << 'EOSQL' 2>/dev/null || true
+# Synchronously initialize MariaDB database, users, and tables before starting services
+/usr/sbin/mariadbd --user=mysql --skip-networking --socket=/run/mysqld/mysqld.sock &
+TMP_PID=$!
+for _ in {1..30}; do
+    if mariadb --socket=/run/mysqld/mysqld.sock -e "SELECT 1" >/dev/null 2>&1; then break; fi
+    sleep 1
+done
+
+mariadb --socket=/run/mysqld/mysqld.sock -e "
+CREATE DATABASE IF NOT EXISTS dvwa;
+CREATE USER IF NOT EXISTS 'dvwa'@'localhost' IDENTIFIED BY 'dvwa';
+CREATE USER IF NOT EXISTS 'dvwa'@'127.0.0.1' IDENTIFIED BY 'dvwa';
+CREATE USER IF NOT EXISTS 'dvwa'@'%' IDENTIFIED BY 'dvwa';
+ALTER USER 'dvwa'@'localhost' IDENTIFIED BY 'dvwa';
+ALTER USER 'dvwa'@'127.0.0.1' IDENTIFIED BY 'dvwa';
+ALTER USER 'dvwa'@'%' IDENTIFIED BY 'dvwa';
+GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'localhost';
+GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'%';
+FLUSH PRIVILEGES;" 2>/dev/null || true
+
+mariadb --socket=/run/mysqld/mysqld.sock dvwa << 'EOSQL' 2>/dev/null || true
 CREATE TABLE IF NOT EXISTS users (
   user_id int(6) NOT NULL AUTO_INCREMENT,
   first_name varchar(15) DEFAULT NULL,
@@ -53,6 +67,8 @@ INSERT INTO guestbook (comment_id, comment, name)
 VALUES (1,'This is a test comment.','test')
 ON DUPLICATE KEY UPDATE name=VALUES(name);
 EOSQL
-) &
+
+kill -TERM "$TMP_PID" 2>/dev/null || true
+wait "$TMP_PID" 2>/dev/null || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/lab.conf
