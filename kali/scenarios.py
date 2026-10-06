@@ -91,13 +91,16 @@ def web():
                     r.read()
                 break
             except urllib.error.HTTPError as e:
+                if e.code in (500, 502, 503) and attempt < 9:
+                    time.sleep(2)
+                    continue
                 if e.code != 404:
                     raise
                 break
             except (urllib.error.URLError, ConnectionRefusedError, OSError):
                 if attempt == 9:
                     raise
-                time.sleep(1)
+                time.sleep(2)
 
 def dvwa_bruteforce():
     url = 'http://linux-victim/dvwa/login.php'

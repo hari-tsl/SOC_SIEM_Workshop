@@ -17,7 +17,7 @@ chmod 666 /var/log/auth.log /var/log/syslog /var/log/vsftpd.log 2>/dev/null || t
         if mariadb -e "SELECT 1" >/dev/null 2>&1; then break; fi
         sleep 2
     done
-    mariadb -e "CREATE DATABASE IF NOT EXISTS dvwa; GRANT ALL ON dvwa.* TO 'dvwa'@'localhost' IDENTIFIED BY 'dvwa'; FLUSH PRIVILEGES;" 2>/dev/null || true
+    mariadb -e "CREATE DATABASE IF NOT EXISTS dvwa; CREATE USER IF NOT EXISTS 'dvwa'@'localhost' IDENTIFIED BY 'dvwa'; CREATE USER IF NOT EXISTS 'dvwa'@'127.0.0.1' IDENTIFIED BY 'dvwa'; CREATE USER IF NOT EXISTS 'dvwa'@'%' IDENTIFIED BY 'dvwa'; GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'localhost', 'dvwa'@'127.0.0.1', 'dvwa'@'%'; FLUSH PRIVILEGES;" 2>/dev/null || true
     mariadb dvwa << 'EOSQL' 2>/dev/null || true
 CREATE TABLE IF NOT EXISTS users (
   user_id int(6) NOT NULL AUTO_INCREMENT,
