@@ -46,15 +46,17 @@ CREATE TABLE IF NOT EXISTS users (
   avatar varchar(70) DEFAULT NULL,
   last_login timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   failed_login int(3) DEFAULT 0,
+  role varchar(20) DEFAULT 'user',
+  account_enabled tinyint(1) DEFAULT 1,
   PRIMARY KEY (user_id)
 );
-INSERT INTO users (user_id, first_name, last_name, user, password, avatar, failed_login)
+INSERT INTO users (user_id, first_name, last_name, user, password, avatar, failed_login, role, account_enabled)
 VALUES 
-(1,'admin','admin','admin',MD5('password'),'/dvwa/images/admin.jpg',0),
-(2,'Gordon','Brown','gordonb',MD5('abc123'),'/dvwa/images/gordonb.jpg',0),
-(3,'Hack','Me','1337',MD5('8934e7d15453e97507ef794cf7b0519d'),'/dvwa/images/1337.jpg',0),
-(4,'Pablo','Picasso','pablo',MD5('letmein'),'/dvwa/images/pablo.jpg',0),
-(5,'Bob','Smith','smithy',MD5('password'),'/dvwa/images/smithy.jpg',0)
+(1,'admin','admin','admin',MD5('password'),'/dvwa/images/admin.jpg',0,'admin',1),
+(2,'Gordon','Brown','gordonb',MD5('abc123'),'/dvwa/images/gordonb.jpg',0,'user',1),
+(3,'Hack','Me','1337',MD5('8934e7d15453e97507ef794cf7b0519d'),'/dvwa/images/1337.jpg',0,'user',1),
+(4,'Pablo','Picasso','pablo',MD5('letmein'),'/dvwa/images/pablo.jpg',0,'user',1),
+(5,'Bob','Smith','smithy',MD5('password'),'/dvwa/images/smithy.jpg',0,'user',1)
 ON DUPLICATE KEY UPDATE user=VALUES(user);
 
 CREATE TABLE IF NOT EXISTS guestbook (
@@ -66,9 +68,27 @@ CREATE TABLE IF NOT EXISTS guestbook (
 INSERT INTO guestbook (comment_id, comment, name)
 VALUES (1,'This is a test comment.','test')
 ON DUPLICATE KEY UPDATE name=VALUES(name);
+
+CREATE TABLE IF NOT EXISTS access_log (
+  id int AUTO_INCREMENT PRIMARY KEY,
+  user_id int NOT NULL,
+  target_id int NOT NULL,
+  action varchar(50) NOT NULL,
+  timestamp datetime NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS security_log (
+  id int AUTO_INCREMENT PRIMARY KEY,
+  user_id int NOT NULL,
+  target_id int NOT NULL,
+  action varchar(50) NOT NULL,
+  timestamp datetime NOT NULL,
+  ip_address varchar(45) NOT NULL
+) ENGINE=InnoDB;
 EOSQL
 
 kill -TERM "$TMP_PID" 2>/dev/null || true
 wait "$TMP_PID" 2>/dev/null || true
+rm -f /run/mysqld/mysqld.sock /run/mysqld/mysqld.pid 2>/dev/null || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/lab.conf

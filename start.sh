@@ -10,6 +10,9 @@ echo "=================================================="
 echo "          SOC SIEM LAB STARTUP LAUNCHER           "
 echo "=================================================="
 
+# 0. Check and Prepare Endpoint Requirements
+"$SCRIPT_DIR/scripts/prerequisites.sh"
+
 # 1. Ensure Host Elasticsearch and Kibana are running
 if ! curl -fsS http://localhost:9200/_cluster/health >/dev/null 2>&1; then
     echo "[INFO] Native Elasticsearch not detected on host."
@@ -62,7 +65,8 @@ done
 if [ "$ready" -eq 1 ]; then
     echo "[OK] Linux DVWA target ready."
 else
-    echo "[WARN] DVWA took longer than expected; proceeding with acceptance checks..."
+    echo "[WARN] DVWA took longer than expected; checking service state..."
+    dc exec -T linux-victim supervisorctl status || true
 fi
 echo "[OK] All target services ready."
 

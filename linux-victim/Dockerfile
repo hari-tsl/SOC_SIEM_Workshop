@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     php8.2-mysql \
     php8.2-gd \
     php8.2-curl \
+    php8.2-sqlite3 \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -s /bin/bash student \
     && mkdir -p /run/sshd /srv/web /var/run/vsftpd/empty /run/php /var/www/html /var/log/nginx
