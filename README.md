@@ -27,12 +27,15 @@ On your Mac, tunnel to the Linux host:
 ssh -L 5601:127.0.0.1:5601 -L 8080:127.0.0.1:8080 -L 8006:127.0.0.1:8006 ubuntu@YOUR_LINUX_HOST
 ```
 
-Then open the same localhost URLs on your Mac. The full Windows lab cannot run on an M2 Mac's Docker Desktop because this deployment requires x86_64 KVM. Validate KVM on the actual cloud host; do not assume every EC2 instance exposes it.
+Then open the same localhost URLs on your browser.
+
+> [!TIP]
+> For a complete, step-by-step walkthrough, see the [Quick Start Guide](docs/QUICKSTART.md).
 
 ## Commands
 
 ```bash
-./attack.sh demo           # all seven bounded scenarios
+./attack.sh demo           # all nine bounded scenarios
 ./attack.sh linux-auth     # five wrong SSH passwords, then one correct login
 ./attack.sh windows-auth   # five wrong SMB passwords, then a share listing
 ./scripts/acceptance.sh    # fresh scenario run plus telemetry assertions
